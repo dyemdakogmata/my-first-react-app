@@ -1,37 +1,57 @@
-import React, { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+"use client";
+import { useState, useEffect } from "react";
 
-export default function CoinCounter() {
-  const [count, setCount] = useState(0);
+export default function Home() {
+  const [coinCount, setCoinCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Fetch coin count from ESP32
-  const fetchCount = async () => {
+  const fetchCoins = async () => {
     try {
-      const res = await fetch("http://192.168.4.1/count"); // replace with your ESP32 IP
+      const res = await fetch("/api/data", { cache: "no-store" });
       const data = await res.json();
-      setCount(data.count);
-    } catch (error) {
-      console.error("Error fetching coin count:", error);
+      setCoinCount(data.coinCount);
+    } catch (err) {
+      console.error("Fetch error:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Poll every 1 second
+  const resetCoins = async () => {
+    setIsLoading(true);
+    try {
+      await fetch("/api/data", { method: "DELETE" });
+      setCoinCount(0);
+    } catch (err) {
+      console.error("Reset error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const interval = setInterval(fetchCount, 1000);
+    fetchCoins();
+    const interval = setInterval(fetchCoins, 2000);
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
-      <Card className="w-96 shadow-xl rounded-2xl p-6 text-center">
-        <h1 className="text-2xl font-bold mb-4">💰 Coin Counter</h1>
-        <CardContent>
-          <p className="text-lg mb-4">Inserted Coins:</p>
-          <h2 className="text-5xl font-extrabold text-green-600 mb-6">{count}</h2>
-          <Button onClick={fetchCount}>Refresh</Button>
-        </CardContent>
-      </Card>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
+      <h1 className="text-2xl mb-4">💰 Coin Counter</h1>
+      
+      {isLoading ? (
+        <div className="text-6xl font-bold text-blue-500 animate-pulse">...</div>
+      ) : (
+        <h2 className="text-6xl font-bold text-blue-500">{coinCount}</h2>
+      )}
+      
+      <button
+        onClick={resetCoins}
+        disabled={isLoading}
+        className={`mt-6 px-6 py-2 rounded-xl ${isLoading ? 'bg-gray-600' : 'bg-red-600 hover:bg-red-700'}`}
+      >
+        {isLoading ? "Processing..." : "Reset"}
+      </button>
     </div>
   );
 }
