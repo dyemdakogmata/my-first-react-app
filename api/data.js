@@ -1,50 +1,34 @@
-import express from "express";
-import cors from "cors";
+let coinCount = 0; // ⚠️ In-memory only (resets if Vercel sleeps/restarts)
 
-const app = express();
-const PORT = 5000;
+export default function handler(req, res) {
+  if (req.method === "GET") {
+    // Return current total
+    res.status(200).json({ coinCount });
+  } 
+  else if (req.method === "POST") {
+    const { coinCount: newCoin } = req.body || {};
 
-app.use(cors());
-app.use(express.json());
+    if (!newCoin) {
+      return res.status(400).json({ error: "coinCount is required" });
+    }
 
-// In-memory storage
-let coinCount = 0;
+    // Add coin value from ESP32
+    coinCount += newCoin;
 
-// GET - fetch current coin count
-app.get("/api/data", (req, res) => {
-  res.json({ coinCount });
-});
+    console.log("💰 Coin received:", newCoin);
 
-// DELETE - reset coin count
-app.delete("/api/data", (req, res) => {
-  coinCount = 0;
-  res.json({ message: "Coin count reset", coinCount });
-});
-
-// POST - add coin from ESP32
-app.post("/api/data", (req, res) => {
-  const { coinValue, coinType, pulseCount, timestamp } = req.body;
-
-  if (!coinValue) {
-    return res.status(400).json({ error: "coinValue is required" });
+    res.status(200).json({
+      message: "Coin added",
+      received: newCoin,
+      total: coinCount,
+    });
+  } 
+  else if (req.method === "DELETE") {
+    coinCount = 0;
+    res.status(200).json({ message: "Coin count reset", coinCount });
+  } 
+  else {
+    res.setHeader("Allow", ["GET", "POST", "DELETE"]);
+    res.status(405).end(`Method ${req.method} Not Allowed`);
   }
-
-  // Increase total coin count by coin value
-  coinCount += coinValue;
-
-  console.log("💰 New coin received:", { coinValue, coinType, pulseCount, timestamp });
-
-  res.json({
-    message: "Coin added",
-    coinValue,
-    coinType,
-    pulseCount,
-    timestamp,
-    total: coinCount,
-  });
-});
-
-// Start the server
-app.listen(PORT, () => {
-  console.log(`✅ Backend running at http://localhost:${PORT}`);
-});
+}
