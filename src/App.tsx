@@ -7,7 +7,7 @@ export default function Home() {
 
   const fetchCoins = async () => {
     try {
-      const res = await fetch("/api/data", { cache: "no-store" });
+      const res = await fetch("https://my-first-react-app-zeta-one.vercel.app/api/data", { cache: "no-store" });
       const data = await res.json();
       setCoinCount(data.coinCount);
     } catch (err) {
@@ -20,7 +20,7 @@ export default function Home() {
   const resetCoins = async () => {
     setIsLoading(true);
     try {
-      await fetch("/api/data", { method: "DELETE" });
+      await fetch("https://my-first-react-app-zeta-one.vercel.app/api/data", { method: "DELETE" });
       setCoinCount(0);
     } catch (err) {
       console.error("Reset error:", err);
